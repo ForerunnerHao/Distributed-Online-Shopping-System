@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "tutorial7_8.proto";
+option java_outer_classname = "WarehouseProto";
+
+enum PReservationStatus {
+  RESERVATION_STATUS_UNSPECIFIED = 0;
+  PENDING   = 1;
+  RELEASED  = 2;
+  CONFIRMED = 3;
+  EXPIRED   = 4;
+}
+
+service WarehouseService {
+  // Try to reserve the specified quantity;
+  rpc Reserve(ReserveRequest) returns (ReserveResponse);
+  // Payment failed/Order timed out/ Out of stock -> Release
+  rpc Release(ReleaseRequest) returns (ReleaseResponse);
+  // Payment successful -> Confirm delivery
+  rpc Confirm(ConfirmRequest) returns (ConfirmResponse);
+  // Refund
+//  rpc Refund(RefundRequest) returns(RefundResponse);
+  // Get the stock
+  rpc Stock(StockRequest) returns (StockResponse);
+}
+
+message ReserveRequest {
+  string orderId = 1;
+  string itemId = 2;
+  string sku = 3;
+  int32 quantity = 4;
+  string reservationId = 5; // Idempotent keys: orderId-warehouseId
+}
+
+message ReserveResponse {
+  bool ok = 1;
+  int32 reservedQty = 2;     // Actual reserved quantity (<= requested quantity)
+  string reservationId = 3;
+  string message = 4;
+}
+
+message ReleaseRequest {
+  string reservationId = 1;
+  PReservationStatus reservationStatus = 2;
+  string reason = 3;
+}
+message ReleaseResponse {
+  bool ok = 1;
+  string reservationId = 2;
+  string itemSku = 3;
+  int32 totalQty = 4;
+  int32 deductedQty = 5;
+  int32 reservedQty = 6;
+  int32 releasedQty = 7;
+  string message = 8;
+}
+
+message ConfirmRequest { string reservationId = 1; }
+message ConfirmResponse {
+  bool ok = 1;
+  string reservationId = 2;
+  string itemSku = 3;
+  int32 totalQty = 4;
+  int32 deductedQty = 5;
+  int32 reservedQty = 6;
+  int32 confirmedQty = 7;
+  string message = 8;
+}
+
+message StockRequest{
+  string sku = 1;
+}
+
+message StockResponse{
+  bool ok = 1;
+  int32 totalQty = 2;
+  int32 deductedQty = 3;
+  int32 reservedQty = 4;
+}

@@ -1,0 +1,85 @@
+@base = http://localhost:8086
+@contentType = application/json
+
+### 健康检查
+GET {{base}}/actuator/health
+
+### 创建账户 A
+POST {{base}}/api/v1/accounts
+Content-Type: {{contentType}}
+
+{
+  "accountNumber": "A10001",
+  "ownerName": "Alice",
+  "email": "alice@example.com",
+  "initialBalance": 5000,
+  "currency": "AUD"
+}
+
+### 创建账户 B
+POST {{base}}/api/v1/accounts
+Content-Type: {{contentType}}
+
+{
+  "accountNumber": "B20001",
+  "ownerName": "Bob",
+  "email": "bob@example.com",
+  "initialBalance": 1000,
+  "currency": "AUD"
+}
+
+### 查询账户 A
+GET {{base}}/api/v1/accounts/A10001
+
+### 查询账户 B
+GET {{base}}/api/v1/accounts/B20001
+
+### 发起支付 (A -> B)
+POST http://localhost:8086/api/v1/payments
+Content-Type: application/json
+
+{
+  "idempotencyKey": "idem-1",
+  "sourceAccount": "A10001",
+  "destinationAccount": "B20001",
+  "amount": 120.50,
+  "currency": "AUD"
+}
+
+
+### 根据交易号查询支付 (把 {trxRef} 替换为上一步响应里的 transactionRef)
+GET {{base}}/api/v1/payments/{trxRef}
+
+### 退款 (把 {trxRef} 替换为上一步的 transactionRef)
+POST {{base}}/api/v1/payments/{trxRef}/refund
+Content-Type: {{contentType}}
+
+{
+  "idempotencyKey": "refund-1",
+  "reason": "customer_request"
+}
+
+### 幂等性检查：同一个 idempotencyKey 再发一次，应该返回相同的 transactionRef
+POST http://localhost:8086/api/v1/payments
+Content-Type: application/json
+
+{
+  "idempotencyKey": "idem-1",
+  "sourceAccount": "A10001",
+  "destinationAccount": "B20001",
+  "amount": 120.50,
+  "currency": "AUD"
+}
+
+### 查询交易（把 {trxRef} 替换为上一步/你现在拿到的值）
+GET http://localhost:8086/api/v1/payments/{trxRef}
+
+### 发起退款
+POST http://localhost:8086/api/v1/payments/{trxRef}/refund
+Content-Type: application/json
+
+{
+  "idempotencyKey": "refund-1",
+  "reason": "customer_request",
+  "callbackUrl": "http://localhost:9999/callback"
+}

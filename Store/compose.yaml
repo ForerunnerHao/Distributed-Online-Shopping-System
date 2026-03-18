@@ -1,0 +1,52 @@
+name: store
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: store_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-store}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      TZ: Australia/Sydney
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # optional, sql setup inti script
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - store_net
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: store_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      TZ: Australia/Sydney
+    ports:
+      - "5051:80"
+    networks: [store_net]
+
+  rabbit:
+    image: rabbitmq:4-management
+    container_name: store_rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+networks:
+  store_net:
+    name: store_net
+    driver: bridge
+
+volumes:
+  rabbitmq-data:
+  pg_data:
+    name: store_pg_data

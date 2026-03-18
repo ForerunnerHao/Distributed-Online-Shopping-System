@@ -1,0 +1,55 @@
+plugins {
+    id "org.springframework.boot"
+    id "io.spring.dependency-management"
+}
+
+repositories { mavenCentral() }
+
+dependencies {
+    implementation project(":proto")
+    implementation project(":common")
+
+    // Web
+    implementation "org.springframework.boot:spring-boot-starter-web"
+
+    //docker
+    developmentOnly "org.springframework.boot:spring-boot-docker-compose"
+
+    // OpenAPI Docs - Swagger
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+
+    // BCrypt
+    implementation 'org.springframework.security:spring-security-crypto'
+
+    // JWT（jjwt 0.12.x）
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+    // JPA + PG
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    runtimeOnly "org.postgresql:postgresql:${postgresDriverVersion}"
+
+    // jackson
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // database version management: Flyway
+    // https://mvnrepository.com/artifact/org.flywaydb/flyway-core
+    implementation "org.flywaydb:flyway-core:11.11.2"
+    // https://mvnrepository.com/artifact/org.flywaydb/flyway-database-postgresql
+    runtimeOnly("org.flywaydb:flyway-database-postgresql:11.11.2")
+
+    // AMQP / RabbitMQ
+    implementation "org.springframework.boot:spring-boot-starter-amqp"
+
+    // Actuator
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+
+    // gRPC - client
+    implementation "net.devh:grpc-spring-boot-starter:3.1.0.RELEASE"
+    implementation platform("io.grpc:grpc-bom:1.76.0")
+    implementation "io.grpc:grpc-netty-shaded"
+
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+}

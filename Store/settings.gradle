@@ -1,0 +1,6 @@
+rootProject.name = "store-system"
+
+include(":common")
+include(":proto")
+include(":store-app")
+include(":warehouse")

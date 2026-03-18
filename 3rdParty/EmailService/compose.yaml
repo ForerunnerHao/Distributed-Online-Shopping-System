@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-email
+    environment:
+      POSTGRES_DB: emaildb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-email-data:/var/lib/postgresql/data
+      # - ./src/main/resources/db/migration/V1__init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+#  rabbitmq:
+#    image: rabbitmq:3-management-alpine
+#    container_name: rabbitmq-email
+#    environment:
+#      RABBITMQ_DEFAULT_USER: guest
+#      RABBITMQ_DEFAULT_PASS: guest
+#    ports:
+#      - "5672:5672"
+#      - "15672:15672"
+#    healthcheck:
+#      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+
+volumes:
+  postgres-email-data:

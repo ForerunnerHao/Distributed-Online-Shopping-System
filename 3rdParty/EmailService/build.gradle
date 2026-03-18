@@ -1,0 +1,69 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.3.2'
+	id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.email'
+version = '0.0.1-SNAPSHOT'
+description = 'Email Service'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-integration'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	implementation 'org.springframework.integration:spring-integration-http'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	// ORM - jpa
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	
+	// RabbitMQ
+	implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+	//	openapi - swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.3'
+
+	// setter, getter, constructor
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// database
+	runtimeOnly 'org.postgresql:postgresql'
+	testRuntimeOnly 'com.h2database:h2'
+
+	// others
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.integration:spring-integration-test'
+	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

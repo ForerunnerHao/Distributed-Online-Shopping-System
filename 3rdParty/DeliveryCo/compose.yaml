@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: 'postgres:16-alpine'
+    container_name: delivery_postgres
+    environment:
+      - 'POSTGRES_DB=delivery'
+      - 'POSTGRES_PASSWORD=admin'
+      - 'POSTGRES_USER=admin'
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - delivery_net
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: delivery_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      TZ: Australia/Sydney
+    ports:
+      - "5054:80"
+    networks: [ delivery_net ]
+
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5434/${POSTGRES_DB:-delivery}
+#      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-admin}
+#      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+#      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+#      SPRING_PROFILES_ACTIVE: docker
+#    ports:
+#      - "8084:8084"
+#    restart: unless-stopped
+
+#  rabbitmq:
+#    image: rabbitmq:3-management
+#    ports: ["5673:5672","15673:15672"]
+
+networks:
+  delivery_net:
+    name: delivery_net
+    driver: bridge
+
+volumes:
+  pg_data:
+    name: delivery_pg_data

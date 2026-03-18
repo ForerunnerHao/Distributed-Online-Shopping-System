@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: 'postgres:16-alpine'
+    container_name: bank_postgres
+    environment:
+      - 'POSTGRES_DB=bank'
+      - 'POSTGRES_PASSWORD=admin'
+      - 'POSTGRES_USER=admin'
+    ports:
+      - '5436:5432'
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - bank_net
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: bank_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      TZ: Australia/Sydney
+    ports:
+      - "5056:80"
+    networks: [ bank_net ]
+
+networks:
+  bank_net:
+    name: bank_net
+    driver: bridge
+
+volumes:
+  pg_data:
+    name: bank_pg_data

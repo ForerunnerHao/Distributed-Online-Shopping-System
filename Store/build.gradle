@@ -1,0 +1,65 @@
+buildscript {
+    repositories { mavenCentral() }
+}
+
+plugins {
+    id "java"
+    id "org.springframework.boot" version "3.3.4"
+    id "io.spring.dependency-management" version "1.1.6"
+}
+
+ext {
+    javaVersion = JavaVersion.VERSION_17
+    springBootVersion = "3.3.4"
+    springdocVersion = "2.6.0"
+    logstashEncoderVersion = "7.4"
+    postgresDriverVersion = "42.7.4"
+    lombokVersion = "1.18.34"
+}
+
+allprojects {
+    group = "Tutorial7_8"
+    version = "0.1.0"
+    repositories { mavenCentral() }
+}
+
+
+subprojects {
+    apply plugin: "java"
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.release = 17
+    }
+
+    dependencies {
+
+        // OpenAPI Docs - Swagger
+        implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+
+        // lombok
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+        // JSON logger
+        implementation "net.logstash.logback:logstash-logback-encoder:${logstashEncoderVersion}"
+
+        testImplementation "org.junit.jupiter:junit-jupiter:5.10.3"
+    }
+
+    configurations {
+        compileOnly {
+            extendsFrom annotationProcessor
+        }
+    }
+
+    test { useJUnitPlatform() }
+}
+
+springBoot {
+    mainClass = 'Tutorial7_8.Store.StoreApplication.java'   // ← 改成你的全限定类名
+}

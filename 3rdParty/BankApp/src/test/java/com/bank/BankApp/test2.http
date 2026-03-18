@@ -1,0 +1,176 @@
+@base = http://localhost:8086
+@contentType = application/json
+@currency = AUD
+
+# 你当前已有账户（见截图）：STORE-0001 / CUSTOMER-0001 / A10001 / B20001
+@accStore = STORE-0001
+@accCust  = CUSTOMER-0001
+@accA = A10001
+@accB = B20001
+
+# 每次运行自动生成唯一幂等键
+#@idem = idem-{{$uuid}}
+@idem = idem-fixed-001   # 固定，不要用 {{$uuid}}
+
+# 可选：本地回调接收器（如果起了一个 9999 端口的回调服务）
+@callback = http://localhost:9999/callback
+
+
+### 0) 健康检查
+GET {{base}}/actuator/health
+
+
+### 1) （可选）创建账户示例 —— 你已有账号，可跳过，避免重复/冲突
+# 1.1 创建账户 A（如已存在 A10001，请跳过）
+# POST {{base}}/api/v1/accounts
+# Content-Type: {{contentType}}
+#
+# {
+#   "accountNumber": "{{accA}}",
+#   "ownerName": "Alice",
+#   "email": "alice@example.com",
+#   "initialBalance": 5000,
+#   "currency": "{{currency}}"
+# }
+
+###
+# 1.2 创建账户 B（如已存在 B20001，请跳过）
+# POST {{base}}/api/v1/accounts
+# Content-Type: {{contentType}}
+#
+# {
+#   "accountNumber": "{{accB}}",
+#   "ownerName": "Bob",
+#   "email": "bob@example.com",
+#   "initialBalance": 1000,
+#   "currency": "{{currency}}"
+# }
+
+
+### 2) 查询当前四个账户（与你截图一致）
+GET {{base}}/api/v1/accounts/{{accStore}}
+
+###
+GET {{base}}/api/v1/accounts/{{accCust}}
+
+###
+GET {{base}}/api/v1/accounts/{{accA}}
+
+###
+GET {{base}}/api/v1/accounts/{{accB}}
+
+
+### 3) 发起支付（A10001 -> B20001，AUD 120.50），带幂等键
+POST {{base}}/api/v1/payments
+Content-Type: {{contentType}}
+
+{
+#  "idempotencyKey": "{{idem}}",
+  "idempotencyKey": "idem-abc-001",
+  "sourceAccount": "{{accA}}",
+  "destinationAccount": "{{accB}}",
+  "amount": 120.50,
+  "currency": "{{currency}}"
+}
+
+> {%
+    // 保存交易号到全局变量，方便后续调用（IDEA HTTP Client 脚本）
+    client.test("capture trxRef", function() {
+        client.assert(response.status === 200 || response.status === 201, "expect 200/201");
+        const body = response.body;
+        client.assert(!!body.transactionRef, "transactionRef missing");
+        client.global.set("trxRef", body.transactionRef);
+    });
+%}
+
+
+### 4) 幂等性验证：用同一个 idempotencyKey 再发一次，不应重复扣款，transactionRef 应相同
+POST {{base}}/api/v1/payments
+Content-Type: {{contentType}}
+
+{
+#  "idempotencyKey": "{{idem}}",
+  "idempotencyKey": "idem-abc-001",
+  "sourceAccount": "{{accA}}",
+  "destinationAccount": "{{accB}}",
+  "amount": 120.50,
+  "currency": "{{currency}}"
+}
+
+> {% client.test("same trxRef for same idem key", function() {
+        client.assert(response.status === 200 || response.status === 201, "expect 200/201");
+        client.assert(response.body.transactionRef === client.global.get("trxRef"), "idempotency failed: trxRef differs");
+    });
+%}
+
+
+### 5) 拉取交易详情（使用第 3 步保存的 trxRef）
+GET {{base}}/api/v1/payments/{{trxRef}}
+
+### 5-2) 拉取交易详情（使用 idempotencyKey）
+GET {{base}}/api/v1/payments/idempotency/idem-a0cf8e57-0627-4f64-948b-ef3cfdea83da
+
+
+
+### 6) 支付后查看两端账户余额（应与业务规则一致）
+GET {{base}}/api/v1/accounts/{{accA}}
+
+###
+GET {{base}}/api/v1/accounts/{{accB}}
+
+
+### 7) 对该交易发起退款（建议带回调地址测试回调链路；如没有回调接收器，可删掉 callbackUrl 字段）
+POST {{base}}/api/v1/payments/{{trxRef}}/refund
+Content-Type: {{contentType}}
+
+{
+  "idempotencyKey": "refund-{{$uuid}}",
+  "reason": "customer_request",
+  "currency": "{{currency}}",
+  "callbackUrl": "{{callback}}"
+}
+
+
+### 8) 退款后再次查看账户余额
+GET {{base}}/api/v1/accounts/{{accA}}
+
+###
+GET {{base}}/api/v1/accounts/{{accB}}
+
+
+### 9) 负例：余额不足（尝试一个非常大的金额，应返回 4xx）
+POST {{base}}/api/v1/payments
+Content-Type: {{contentType}}
+
+{
+  "idempotencyKey": "idem-big-{{$timestamp}}",
+  "sourceAccount": "{{accA}}",
+  "destinationAccount": "{{accB}}",
+  "amount": 9999999,
+  "currency": "{{currency}}"
+}
+
+
+### 10) （可选）并发冒烟：两笔大额同时发（只有一笔可能成功，或都失败，视余额/锁策略）
+POST {{base}}/api/v1/payments
+Content-Type: {{contentType}}
+
+{
+  "idempotencyKey": "idem-conc-1-{{$uuid}}",
+  "sourceAccount": "{{accA}}",
+  "destinationAccount": "{{accB}}",
+  "amount": 4000,
+  "currency": "{{currency}}"
+}
+
+###
+POST {{base}}/api/v1/payments
+Content-Type: {{contentType}}
+
+{
+  "idempotencyKey": "idem-conc-2-{{$uuid}}",
+  "sourceAccount": "{{accA}}",
+  "destinationAccount": "{{accB}}",
+  "amount": 4000,
+  "currency": "{{currency}}"
+}
